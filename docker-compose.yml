@@ -1,0 +1,25 @@
+services:
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3000
+      # Set this on the VPS to your real domain(s), e.g. https://yourdomain.com
+      # - ALLOWED_ORIGINS=https://yourdomain.com
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        # Empty means same-origin; Nginx proxies /api and /socket.io to backend.
+        - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    restart: unless-stopped

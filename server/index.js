@@ -5,13 +5,34 @@ const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
-app.use(cors());
+
+const allowedOriginsRaw = process.env.ALLOWED_ORIGINS;
+const allowedOrigins = allowedOriginsRaw
+  ? allowedOriginsRaw.split(',').map((o) => o.trim()).filter(Boolean)
+  : '*';
+
+app.use(
+  cors(
+    allowedOrigins === '*'
+      ? undefined
+      : {
+          origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+              callback(null, true);
+              return;
+            }
+            callback(new Error('CORS not allowed'));
+          },
+          methods: ['GET', 'POST'],
+        }
+  )
+);
 app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: allowedOrigins,
     methods: ['GET', 'POST']
   }
 });
