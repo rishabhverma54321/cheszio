@@ -4,8 +4,11 @@ import { io } from 'socket.io-client';
 // Create context
 const SocketContext = createContext();
 
-// Server URL from environment variable or fallback to localhost
-const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Server URL from environment variable.
+// If not provided, default to same-origin (works with Nginx proxying /socket.io and /api).
+const SERVER_URL = import.meta.env.VITE_API_URL ?? '';
+console.log({ SERVER_URL })
+console.log("api_url", import.meta.env.VITE_API_URL)
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
@@ -63,4 +66,4 @@ export const useSocket = () => {
     throw new Error('useSocket must be used within a SocketProvider');
   }
   return context;
-}; 
+};

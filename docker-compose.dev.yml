@@ -1,0 +1,14 @@
+# Development overrides for docker-compose.yml
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# This runs ONLY the backend in Docker with live reload (nodemon).
+# Run the frontend natively: cd client && npm run dev
+
+services:
+  backend:
+    volumes:
+      - ./server:/app
+      - /app/node_modules  # Preserve container node_modules
+    command: npx nodemon index.js
+    environment:
+      - NODE_ENV=development
