@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-client:
-    runs-on: ubuntu-latest  # GitHub's hosted runner (a fresh Linux VM)
+    runs-on: self-hosted  # GitHub's hosted runner (a fresh Linux VM)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
