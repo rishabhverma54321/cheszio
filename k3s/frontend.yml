@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cheszio-client
+  labels:
+    app: cheszio-client
+spec:
+  replicas: 2                     # static files are stateless — scale freely
+  selector:
+    matchLabels:
+      app: cheszio-client
+  template:
+    metadata:
+      labels:
+        app: cheszio-client
+    spec:
+      containers:
+        - name: client
+          image: rishabhmandawariya/cheszio:client-latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cheszio-client
+spec:
+  selector:
+    app: cheszio-client
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cheszio
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: https://test.dicechess.online/     # ← CHANGE to your real domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cheszio-client     # traffic enters via nginx (the client pod)...
+                port:
+                  number: 80             # ...which internally proxies /api + /socket.io to "backend"

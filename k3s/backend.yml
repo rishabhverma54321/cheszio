@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cheszio-server
+  labels:
+    app: cheszio-server
+spec:
+  replicas: 1                     # ← in-memory game state, see above!
+  selector:
+    matchLabels:
+      app: cheszio-server
+  template:
+    metadata:
+      labels:
+        app: cheszio-server
+    spec:
+      containers:
+        - name: server
+          image: rishabhmandawariya/cheszio:server-latest   # ← YOUR image on Docker Hub
+          imagePullPolicy: Always    # ← pull fresh from Docker Hub on every pod start
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            # ALLOWED_ORIGINS intentionally unset → same-origin via nginx = no CORS pain
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend        # ⚠️ MUST be exactly "backend" — your nginx.conf upstream resolves this name!
+spec:
+  selector:
+    app: cheszio-server      # must match the Deployment's pod labels
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: ClusterIP
