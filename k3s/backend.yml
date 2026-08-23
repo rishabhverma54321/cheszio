@@ -14,6 +14,8 @@ spec:
       labels:
         app: cheszio-server
     spec:
+      imagePullSecrets:
+        - name: dockerhub-secret
       containers:
         - name: server
           image: rishabhmandawariya/cheszio-server:latest   # ← YOUR image on Docker Hub
