@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: rishabhmandawariya/cheszio:server-latest   # ← YOUR image on Docker Hub
+          image: rishabhmandawariya/cheszio-server:latest   # ← YOUR image on Docker Hub
           imagePullPolicy: Always    # ← pull fresh from Docker Hub on every pod start
           ports:
             - containerPort: 3000

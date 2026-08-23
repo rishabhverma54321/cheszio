@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: client
-          image: rishabhmandawariya/cheszio:client-latest
+          image: rishabhmandawariya/cheszio-client:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
@@ -47,7 +47,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: https://test.dicechess.online/     # ← CHANGE to your real domain
+    - host: test.dicechess.online     # ← CHANGE to your real domain
       http:
         paths:
           - path: /
