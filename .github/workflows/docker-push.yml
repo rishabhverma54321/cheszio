@@ -1,0 +1,72 @@
+name: Build & Push to Docker Hub
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-client:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & push client image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./client
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/cheszio-client:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/cheszio-client:${{ github.sha }}
+
+  build-server:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & push server image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./server
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/cheszio-server:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/cheszio-server:${{ github.sha }}
+
+  deploy:                                    # ← sibling of build-client/build-server
+    runs-on: self-hosted
+    needs: [build-client, build-server]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Apply manifests
+        run: sudo kubectl apply -f k3s/
+
+      - name: Rollout new images
+        run: |
+          sudo kubectl rollout restart deployment/cheszio-server
+          sudo kubectl rollout restart deployment/cheszio-client
+          sudo kubectl rollout status deployment/cheszio-server
+          sudo kubectl rollout status deployment/cheszio-client
