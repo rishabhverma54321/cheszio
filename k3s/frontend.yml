@@ -47,7 +47,7 @@ kind: Ingress
 metadata:
   name: cheszio
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
     - host: test.dicechess.online     # ← CHANGE to your real domain
       http:
