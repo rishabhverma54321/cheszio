@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../contexts/SocketContext';
 
 // Get API URL from environment variables or use fallback
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const Home = () => {
   const [playerName, setPlayerName] = useState('');
@@ -36,10 +36,10 @@ const Home = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.roomId) {
         // Navigate to the game room
-        navigate(`/game/${data.roomId}`, { 
+        navigate(`/game/${data.roomId}`, {
           state: { playerName, isCreator: true, gameMode: data.gameMode }
         });
       } else {
@@ -56,7 +56,7 @@ const Home = () => {
   // Handle join room form submit
   const handleJoinRoom = async (e) => {
     e.preventDefault();
-    
+
     if (!playerName.trim()) {
       setError('Please enter your name');
       return;
@@ -79,10 +79,10 @@ const Home = () => {
       });
 
       const data = await response.json();
-      
+
       if (data.exists && !data.full) {
         // Room exists and is not full, navigate to it
-        navigate(`/game/${roomId}`, { 
+        navigate(`/game/${roomId}`, {
           state: { playerName, isCreator: false, gameMode: data.gameMode }
         });
       } else if (data.full) {
@@ -101,7 +101,7 @@ const Home = () => {
   return (
     <div className="page-container">
       <h1 className="page-title">Chess Game</h1>
-      
+
       <div className="card form-container">
         <div className="form-group">
           <label htmlFor="playerName">Your Name</label>
@@ -156,14 +156,14 @@ const Home = () => {
         {!showJoinForm ? (
           <>
             <div className="button-container center">
-              <button 
-                onClick={handleCreateRoom} 
+              <button
+                onClick={handleCreateRoom}
                 disabled={loading || !connected}
                 className="primary-button"
               >
                 {loading ? 'Creating...' : 'Create Room'}
               </button>
-              <button 
+              <button
                 onClick={() => setShowJoinForm(true)}
                 disabled={loading || !connected}
                 className="secondary-button"
@@ -186,15 +186,15 @@ const Home = () => {
               />
             </div>
             <div className="button-container center">
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading || !connected}
                 className="primary-button"
               >
                 {loading ? 'Joining...' : 'Join'}
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowJoinForm(false)}
                 disabled={loading}
                 className="secondary-button"
@@ -209,4 +209,4 @@ const Home = () => {
   );
 };
 
-export default Home; 
+export default Home;
