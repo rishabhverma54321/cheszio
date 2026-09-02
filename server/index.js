@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const { Chess } = require('chess.js');
 
 const app = express();
 
@@ -43,6 +44,33 @@ const games = {};
 
 // Define allowed piece types for dice
 const DICE_PIECES = ['pawn', 'knight', 'bishop', 'rook', 'queen'];
+
+// Dice names → chess.js piece letters
+const DICE_TO_PIECE = {
+  pawn: 'p',
+  knight: 'n',
+  bishop: 'b',
+  rook: 'r',
+  queen: 'q'
+};
+
+/**
+ * Returns true if the current position has at least one legal move
+ * using one of the rolled piece types. Server-side verification so the
+ * client can't claim "no legal moves" falsely to fish for free re-rolls.
+ */
+function hasLegalDiceMove(fen, diceResults) {
+  try {
+    const chess = new Chess(fen);
+    const allowedTypes = (diceResults || []).map((d) => DICE_TO_PIECE[d]);
+    const legalMoves = chess.moves({ verbose: true }); // each move has .piece: 'p','n','b','r','q','k'
+    return legalMoves.some((move) => allowedTypes.includes(move.piece));
+  } catch (err) {
+    // Never let a malformed FEN crash the socket handler
+    console.error('hasLegalDiceMove error:', err.message);
+    return true; // fail open: don't auto-approve on bad data
+  }
+}
 
 // API endpoint to create a new room
 app.post('/api/create-room', (req, res) => {
@@ -262,7 +290,46 @@ io.on('connection', (socket) => {
       socket.emit('dice-error', { message: 'You need to roll the dice first before requesting a re-roll' });
       return;
     }
-    
+
+    // 🆕 GAME-OVER GUARD: a truly finished game (board checkmate/stalemate)
+    // must never be re-rolled — that ends the game, not loops dice.
+    const gameFen = rooms[roomId].gameState;
+    if (gameFen) {
+      try {
+        const chess = new Chess(gameFen);
+        if (chess.isCheckmate() || chess.isStalemate()) {
+          socket.emit('dice-error', { message: 'The game is over — no re-roll available' });
+          return;
+        }
+      } catch (err) {
+        console.error('game-over check error:', err.message); // fail open, continue below
+      }
+    }
+
+    // 🆕 AUTO-APPROVE: server-verified "no legal move with rolled pieces"
+    const playerDice = rooms[roomId].diceResults[playerColor];
+    if (gameFen && playerDice && !hasLegalDiceMove(gameFen, playerDice)) {
+      console.log(`Auto-approving reroll for ${playerColor} in ${roomId}: no legal moves`);
+
+      // Clear dice so they can roll again (same as a manual approval)
+      rooms[roomId].diceResults[playerColor] = [];
+
+      // Notify the requester (same shape the client already handles, + auto flag)
+      socket.emit('reroll-response', {
+        approved: true,
+        auto: true,
+        responderName: 'Auto (no legal moves)'
+      });
+
+      // Notify the opponent so their UI shows what happened
+      socket.to(roomId).emit('reroll-auto-approved', {
+        color: playerColor,
+        playerName: player.name
+      });
+
+      return; // skip the negotiation flow entirely
+    }
+
     // Store re-roll request
     rooms[roomId].rerollRequest = {
       playerId: socket.id,
